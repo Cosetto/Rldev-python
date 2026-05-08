@@ -1,0 +1,37 @@
+***The scripts to be translated are located in the .utf files. Use \n for line breaks.***
+
+***Make sure to delete Reallive.exe.manifest or rename it to Reallive.exe.manifest.bak. This file forces the game to run in administrator mode, which prevents debugging tools from attaching properly.***
+
+***For translating character names in Hadashi Shoujo games, edit them in Gameexe.ini only. Do not modify character names directly in the script files.***
+E.g: #NAMAE = "詩乃"                        ="Shino"
+
+
+***Font modification***
+Search for MOJI_SIZE in GAMEEXE.INI to adjust:
+Font size
+Line spacing
+Character name text
+Other textbox settings
+
+Example:
+#WINDOW.000.MOJI_SIZE=22 ; Font size
+#WINDOW.000.MOJI_REP=3,0 ; Line cut? No idea
+#WINDOW.000.MOJI_CNT=35,6 ; Max word per line and max line per text box
+#WINDOW.000.MOJI_POS=32,0,20,0 ; Textbox position (x,?,y,?)
+#WINDOW.000.MOJI_SHADOW=1 ; Font Shadow
+#WINDOW.000.LUBY_SIZE=0 ; Ruby size?
+...
+#WINDOW.000.NAME_MOJI_SIZE=25 ;Name size
+
+***Reallive.exe Patches***
+Disable Region Check (May differ depending on the game):
+Find: E8 18 1B FF FF
+Replace: 90 90 90 90 90
+
+Disable Disc Check (Only confirmed for Hadashi Shoujo titles):
+Find: E8 67 10 F1 FF 8B F0 83 FE FF 0F 84
+Replace: B8 01 00 00 00 5B 5F E9 CE 02 00 00
+
+
+Alternatively, delete the following line from SEEN0001.org
+goto_unless(intL[0] == 1) @2
