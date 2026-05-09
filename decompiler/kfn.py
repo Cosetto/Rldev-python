@@ -1,3 +1,5 @@
+# Reference: https://github.com/Nightdavisao/pyrldev/blob/main/kprl/kfn.py
+
 from __future__ import annotations
 import re, os
 from dataclasses import dataclass, field
