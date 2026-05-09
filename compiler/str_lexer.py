@@ -7,6 +7,7 @@ from . import config
 from . import app
 from . import global_state
 from . import ke_u_lexer
+from . import ketypes
 
 @dataclass
 class AuxT:
@@ -440,8 +441,10 @@ def get_token(aux: AuxT, st: StrLexerState) -> Any:
 
         m_basic_code = st.match_re(r'^\\([A-Za-z])')
         if m_basic_code:
-            st.consume(2)
-            return ("Code", get_loc(aux), m_basic_code.group(1), None, [])
+            code_ident = m_basic_code.group(1)
+            if code_ident.lower() in ketypes.ctrlcodes:
+                st.consume(2)
+                return ("Code", get_loc(aux), code_ident, None, [])
 
         m_spaces = st.match_re(r'^(\\_|[ \t\u3000])+')
         if m_spaces:

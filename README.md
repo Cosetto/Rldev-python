@@ -4,4 +4,5 @@
 - [x] [**Princess Heart Link**](https://vndb.org/v28285)
 - [x] [**Kud Wafter**](https://vndb.org/v3079)
 - [x] [**Natsuyume Nagisa**](https://vndb.org/v1755)
+- [x] [**ALMA ~Zutto Soba ni...~**](https://vndb.org/v1218)
 - [ ] *Coming soon...*

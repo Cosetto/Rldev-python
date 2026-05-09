@@ -85,6 +85,8 @@ class FuncDef:
 
 functions: Dict[str, FuncDef] = {}
 ctrlcodes: Dict[str, FuncDef] = {}
+function_options: Dict[str, List[FuncDef]] = {}
+ctrlcode_options: Dict[str, List[FuncDef]] = {}
 gotofuncs: List[Tuple[str, str]] = []
 modules: Dict[str, int] = {}
 

@@ -122,8 +122,13 @@ def get_func_def(t: str, params: List[Any], look_in: dict = None) -> ketypes.Fun
     
     # Force search to compare lowercase identities 
     t_lower = t.lower()
-    found = look_in.get(t_lower)
-    defs = [found] if found is not None else []
+    if look_in is ketypes.functions:
+        defs = ketypes.function_options.get(t_lower, [])
+    elif look_in is ketypes.ctrlcodes:
+        defs = ketypes.ctrlcode_options.get(t_lower, [])
+    else:
+        found = look_in.get(t_lower)
+        defs = [found] if found is not None else []
     valid_defs = [d for d in defs if ketypes.valid_opcode(d)]
     
     if not valid_defs:

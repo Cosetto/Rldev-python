@@ -3352,10 +3352,10 @@ module 072 // OBC ObjBackChild
                                                ('objNo', 'strNo', 'disp')
                                                ('objNo', 'strNo', 'disp', 'x', 'y')
                                                ('objNo', 'strNo', 'disp', 'x', 'y', 'srx', 'sry')
-  fun OBJBACKCHILDNUMBER      <2:072:01400, 3> ('objNo', 'strNo')
-                                               ('objNo', 'strNo', 'disp')
-                                               ('objNo', 'strNo', 'disp', 'x', 'y')
-                                               ('objNo', 'strNo', 'disp', 'x', 'y', 'srx', 'sry')                                                          
+  fun OBJBACKCHILDNUMBER      <2:072:01400, 3> ('objNo', 'strNo', strC 'filename')
+                                               ('objNo', 'strNo', strC 'filename', 'disp')
+                                               ('objNo', 'strNo', strC 'filename', 'disp', 'x', 'y')
+                                               ('objNo', 'strNo', strC 'filename', 'disp', 'x', 'y', 'srx', 'sry')                                                          
                                            
 // -----------------------------------------------------------------------------
 

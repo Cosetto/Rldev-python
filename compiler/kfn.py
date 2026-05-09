@@ -87,6 +87,8 @@ def init():
     
     ketypes.functions.clear()
     ketypes.ctrlcodes.clear()
+    ketypes.function_options.clear()
+    ketypes.ctrlcode_options.clear()
     ketypes.gotofuncs.clear()
     
     kfn_path = config.Config.lib_file("reallive.kfn")
@@ -161,12 +163,18 @@ def init():
         )
         
         if fname:
+            ketypes.function_options.setdefault(fname, []).append(kt_func)
             existing = ketypes.functions.get(fname)
             if existing is None:
                 ketypes.functions[fname] = kt_func
             elif not ketypes.valid_opcode(existing) and ketypes.valid_opcode(kt_func):
                 ketypes.functions[fname] = kt_func
-            elif ketypes.valid_opcode(existing) == ketypes.valid_opcode(kt_func):
+            elif (
+                ketypes.valid_opcode(existing) == ketypes.valid_opcode(kt_func)
+                and existing.op_type == kt_func.op_type
+                and existing.op_module == kt_func.op_module
+                and existing.op_code == kt_func.op_code
+            ):
                 if len(existing.prototypes) < len(kt_func.prototypes):
                     existing.prototypes.extend([None] * (len(kt_func.prototypes) - len(existing.prototypes)))
                 for i, proto in enumerate(kt_func.prototypes):
@@ -178,6 +186,7 @@ def init():
                 ketypes.gotofuncs.append((fndef.ident, fname))
         if fndef.ccode and fndef.ccode != '__unnamed__':
             ckey = fndef.ccode.lower()
+            ketypes.ctrlcode_options.setdefault(ckey, []).append(kt_func)
             existing = ketypes.ctrlcodes.get(ckey)
             if existing is None or (not ketypes.valid_opcode(existing) and ketypes.valid_opcode(kt_func)):
                 ketypes.ctrlcodes[ckey] = kt_func
