@@ -28,6 +28,8 @@ Disable Region Check (May differ depending on the game):
 Find: E8 18 1B FF FF
 Replace: 90 90 90 90 90
 
+Pattern: 74 0B E8 XX XX FF FF 88 1D
+
 Disable Disc Check (Only confirmed for Hadashi Shoujo titles):
 Find: E8 67 10 F1 FF 8B F0 83 FE FF 0F 84
 Replace: B8 01 00 00 00 5B 5F E9 CE 02 00 00

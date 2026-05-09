@@ -144,6 +144,7 @@ class Disassembler:
         self.use_excl = []
         self.commands = []
         self.errors = []
+        self.in_multi_message_payload = False
 
     def _variable_name(self, b: int) -> str:
         if b in IVAR: return IVAR[b]
@@ -368,13 +369,14 @@ class Disassembler:
 
     def _read_textout_str(self, r: _Reader) -> str:
         """Reads raw textout bytes and returns the correctly escaped/formatted CP932 string."""
-        _TEXTOUT_STOP = frozenset([0x00, 0x23, 0x24, 0x0a, 0x40, 0x21])
+        _TEXTOUT_STOP = frozenset([0x00, 0x23, 0x24, 0x40, 0x21, 0x7d])
         buf = []
         esc = self.separate_strings and not self.options.get('raw_strings', False)
         
         while not r.eof():
             b = r.peek()
             if b is None or b in _TEXTOUT_STOP: break
+            if b == 0x0a and not self.in_multi_message_payload: break
             
             # EOF marker
             if b == 0x82 and r.pos + 14 <= r.end and r.data[r.pos:r.pos+14] == _SEEN_END_SJS:
@@ -383,6 +385,11 @@ class Disassembler:
                 return "eof"
                 
             b = r.read_byte()
+
+            if b == 0x0a and self.in_multi_message_payload:
+                line_no = r.read_int32() if self.mode == 'avg2000' else r.read_int16()
+                buf.append(f"\\__line{{{line_no}}}")
+                continue
             
             if b == 0x22: # Literal double quote in textout
                 buf.append('"')
@@ -714,8 +721,11 @@ class Disassembler:
             r.read_byte()
             r.read_int32() if self.mode == 'avg2000' else r.read_int16()
             
+        start = r.pos
         try: r.expect(0x28, '_read_unknown_function')
-        except ValueError: return opstr, set()
+        except ValueError:
+            r.pos = start
+            return opstr, set()
 
         parts, remaining = [], argc
         while not r.eof():
@@ -759,8 +769,15 @@ class Disassembler:
                 r.read_byte()
                 r.read_int32() if self.mode == 'avg2000' else r.read_int16()
 
+            param_start = r.pos
             try: r.expect(0x28, f'_read_soft_function({fndef.ident})')
             except ValueError:
+                r.pos = param_start
+                if fndef.ident == 'MULTI_MESSAGE' and r.peek_is(0x7b):
+                    r.read_byte()
+                    self.in_multi_message_payload = True
+                    fake_args = ', '.join(str(i) for i in range(argc))
+                    return f'{fndef.ident}({fake_args})', ptrs, is_jump, pushes_store
                 text, ptrs = self._read_unknown_function(r, fndef.ident, argc)
                 return text, ptrs, is_jump, pushes_store
 
@@ -812,6 +829,16 @@ class Disassembler:
                     while not r.eof() and not r.peek_is(0x29): r.read_byte()
                     break
                 i = next_i
+
+            while remaining > 0 and not r.eof() and not r.peek_is(0x29):
+                while r.peek_is(0x0a):
+                    r.read_byte(); r.read_int16()
+                if r.peek_is(0x29):
+                    break
+                if buf:
+                    buf.append(', ')
+                buf.append(self._read_data(r))
+                remaining -= 1
 
             if not r.eof() and r.peek_is(0x29): r.read_byte()
             elif not r.eof() and r.peek_is(0x0a):
@@ -941,10 +968,13 @@ class Disassembler:
             return Command(offset=offset, text=text, is_jump=is_jump, pointers=ptrs, pushes_store=pushes_store)
 
         if b == 0x24: return self._read_assignment(r, offset)
-        if b == 0x0a:
+        if b == 0x0a and not self.in_multi_message_payload:
             ln = r.read_int32() if self.mode == 'avg2000' else r.read_int16()
             return Command(offset=offset, text=f'// #line {ln}', hidden=True)
         if b == 0x2c: return Command(offset=offset, text=',', hidden=True)
+        if b == 0x7d:
+            self.in_multi_message_payload = False
+            return Command(offset=offset, text='}', hidden=True)
         if b in (0x40, 0x21):
             r.rollback()
             return self._read_kidoku(r, offset)

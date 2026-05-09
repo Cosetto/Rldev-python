@@ -342,6 +342,57 @@ def check_and_compile(loc: Location, funname: str, defs: List[Any], params: List
     return mapped_params, argc, cancel_compile_func
 
 def choose_overload_func(loc: Location, options: List[Any], params: List[Any]) -> int:
+    def param_type(param: Any) -> str:
+        if param[0] == "Simple":
+            expr = param[2]
+            if isinstance(expr, tuple) and expr[0] == "Func":
+                return "special"
+            return keast.type_of_normalised_expr(expr, allow_invalid=False)
+        if param[0] == "Special":
+            return "special"
+        if param[0] == "Complex":
+            return "complex"
+        return "invalid"
+
+    def type_matches(param: Any, param_def: Any) -> bool:
+        ptype, pflags = param_def[0], param_def[1]
+        if "return" in pflags:
+            return True
+        etype = param_type(param)
+        if ptype == "Any":
+            return etype in ("int", "str", "literal", "special", "complex")
+        if ptype in ("Int", "IntC", "IntV"):
+            return etype == "int"
+        if ptype in ("Str", "StrC", "StrV", "ResStr"):
+            return etype in ("str", "literal")
+        if ptype == "Special":
+            return etype in ("special", "complex")
+        if ptype == "Complex":
+            return etype == "complex"
+        return False
+
+    def compatible(prototype: Any) -> bool:
+        if prototype is None:
+            return True
+        non_return = [p for p in prototype if "return" not in p[1]]
+        fixed = []
+        vararg = None
+        for p in non_return:
+            if "argc" in p[1]:
+                vararg = p
+                break
+            fixed.append(p)
+        required = len([p for p in fixed if "optional" not in p[1]])
+        if len(params) < required:
+            return False
+        if vararg is None and len(params) > len(fixed):
+            return False
+        for idx, param in enumerate(params):
+            p_def = fixed[idx] if idx < len(fixed) else vararg
+            if p_def is None or not type_matches(param, p_def):
+                return False
+        return True
+
     overload_lengths = []
     for idx, elt in enumerate(options):
         if elt is None:
@@ -374,11 +425,11 @@ def choose_overload_func(loc: Location, options: List[Any], params: List[Any]) -
     for p_len in reversed(overload_lengths):
         if p_len is None: continue
         t, o, r, idx = p_len
-        if t >= param_count and t - o <= param_count:
+        if t >= param_count and t - o <= param_count and compatible(options[idx]):
             return idx
             
     for i, opt in enumerate(options):
-        if opt is not None: return i
+        if opt is not None and compatible(opt): return i
     raise Exception("Not_found")
 
 def compile(tup: tuple, is_code: bool = False):
@@ -390,6 +441,12 @@ def compile(tup: tuple, is_code: bool = False):
         fail(loc, s)
 
     if not is_code and _compile_short_gan_loader(loc, s, t, params, label, def_op):
+        return
+
+    if not is_code and t.lower() == "multi_message":
+        from . import textout
+        codegen.Output.add_code(loc, codegen.code_of_opcode(def_op.op_type, def_op.op_module, def_op.op_code, len(params), 0) + "{")
+        textout.begin_multi_message_payload()
         return
 
     # Use our new statement-safe overload chooser

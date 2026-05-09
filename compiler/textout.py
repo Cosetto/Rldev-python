@@ -9,6 +9,12 @@ from . import memory
 from . import meta
 from . import text_encoding
 
+_multi_message_pending = False
+
+def begin_multi_message_payload():
+    global _multi_message_pending
+    _multi_message_pending = True
+
 
 def _make_name(prefix: str, idx: int) -> str:
     if idx < 26:
@@ -32,9 +38,13 @@ def finalise():
 
 
 def compile_stub(tup: tuple):
+    global _multi_message_pending
     loc, text, next_cmd = tup
     if text[0] != "Str":
         error(loc, "expected textout to be normalised to string literal")
+
+    raw_multi_message = _multi_message_pending
+    _multi_message_pending = False
 
     tokens = text[2]
     buf: List[str] = []
@@ -50,11 +60,12 @@ def compile_stub(tup: tuple):
     def flush():
         set_quotes(False)
         if buf:
-            codegen.Output.add_code(loc, "".join(buf))
+            codegen.Output.add_code(nowhere if raw_multi_message else loc, "".join(buf))
             buf.clear()
 
     def append_text(s: str):
-        set_quotes(True)
+        if not raw_multi_message:
+            set_quotes(True)
         buf.append(text_encoding.text_to_byte_string(s, loc, "textout"))
 
     def append_sjis_bytes(data: bytes):
@@ -147,6 +158,15 @@ def compile_stub(tup: tuple):
                     meta.call("FontSize", [])
             else:
                 flush()
+                if ident == "__line":
+                    if e_spec is not None or len(params) != 1 or params[0][0] != "Simple":
+                        error(l, r"expected one line number argument to \__line{}")
+                    try:
+                        line_no = keast.int_of_normalised_expr(params[0][2])
+                    except Exception:
+                        error(l, r"line number must be constant in \__line{}")
+                    codegen.Output.add_line(Location(l.file, line_no), force=True)
+                    return
                 if e_spec is not None:
                     error(l, f"the control code \\{ident} cannot have a length specifier")
                 function.compile(("FuncCall", l, None, ident, ident, params, None), is_code=True)
@@ -157,11 +177,14 @@ def compile_stub(tup: tuple):
         else:
             raise AssertionError(tag)
 
-    codegen.Output.add_kidoku(loc)
-    set_quotes(True)
+    if not raw_multi_message:
+        codegen.Output.add_kidoku(loc)
+        set_quotes(True)
     for idx, token in enumerate(tokens):
         parse_token(idx, token)
     flush()
+    if raw_multi_message:
+        codegen.Output.add_code(nowhere, "}")
 
     if next_cmd != "No":
         kind, _ = next_cmd
