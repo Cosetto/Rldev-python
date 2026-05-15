@@ -391,12 +391,21 @@ class Disassembler:
                 buf.append(f"\\__line{{{line_no}}}")
                 continue
             
-            if b == 0x22: # Literal double quote in textout
-                buf.append('"')
+            if b == 0x22:
+                # In textout payload, plain 0x22 is a quoting delimiter used
+                # around SBCS runs, not display text. Literal quotes are
+                # represented by 0x5c 0x22 and handled below.
                 continue
-            if b == 0x2c: # Comma
+            if b == 0x2c:
+                buf.append(',')
                 continue
             if b == 0x5c: # Backslash
+                # In textout payload, 0x5c 0x22 encodes a literal double quote.
+                # Emitting '\\"' here causes a visible backslash after recompiling.
+                if r.pos < r.end and r.peek() == 0x22:
+                    r.read_byte()
+                    buf.append('"')
+                    continue
                 buf.append("\\\\")
                 continue
             if b == 0x27: # Single quote
