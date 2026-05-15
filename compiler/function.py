@@ -9,6 +9,7 @@ from . import intrinsic
 from . import keast
 from . import goto
 from . import text_encoding
+from . import textout
 
 def fail(loc: Location, s: str):
     error(loc, f"unable to find a prototype for '{s}' that matches these parameters")
@@ -449,7 +450,6 @@ def compile(tup: tuple, is_code: bool = False):
         return
 
     if not is_code and t.lower() == "multi_message":
-        from . import textout
         codegen.Output.add_code(loc, codegen.code_of_opcode(def_op.op_type, def_op.op_module, def_op.op_code, len(params), 0) + "{")
         textout.begin_multi_message_payload()
         return

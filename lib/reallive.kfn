@@ -838,7 +838,7 @@ module 004 = Sys // System functions
   fun TONECURVE_OBJECT_ON     <1:Sys:00708, 2> ('bufferNo') 
                                                ('bufferNo', 'toneCurveNo') 
                                                ('bufferNo', strC 'toneCurveFile')
-  fun TONECURVE_ALLOBJECT_OFF2 <1:Sys:00709, 0> ('bufferNo') //Comment this to compile OniUta Seen.txt 
+  fun TONECURVE_ALLOBJECT_OFF2 <1:Sys:00709, 0> ('bufferNo')
   fun TONECURVE_OBJECT_ONS    <1:Sys:00710, 2> ('startBufNo', 'endBufNo') 
                                                ('startBufNo', 'endBufNo', 'toneCurveNo') 
                                                ('startBufNo', 'endBufNo', strC 'toneCurveFile')

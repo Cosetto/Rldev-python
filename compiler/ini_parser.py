@@ -182,11 +182,19 @@ class IniParser:
 
     def parse_ident_chain(self, ident: str):
         chain = [ident]
+        while self.current_token[0] == 'IDENT':
+            # Some shipped GAMEEXE.INI files contain stray spaces inside key
+            # names, e.g. "#SAVEMESSAGE_MESS _STR=...".
+            chain[-1] += self.current_token[1]
+            self.advance()
         while self.accept('DOT'):
             nxt_type, nxt_val = self.current_token
             if nxt_type == 'INT':
                 chain.append(f"{nxt_val:03d}")
                 self.advance()
+                while self.current_token[0] == 'IDENT':
+                    chain[-1] += self.current_token[1]
+                    self.advance()
                 if self.accept('CO'):
                     # Range generation: IDENT.DOTINT : INT = parameters
                     end_range = self.expect('INT')
@@ -199,11 +207,17 @@ class IniParser:
             elif nxt_type == 'IDENT':
                 chain.append(nxt_val)
                 self.advance()
+                while self.current_token[0] == 'IDENT':
+                    chain[-1] += self.current_token[1]
+                    self.advance()
             elif nxt_type == 'LP':
                 # IDENT.DOTINT.(range).DOTIDENT = parameters
                 rng = self.parse_range()
                 self.expect('DOT')
                 dotident = self.expect('IDENT')
+                while self.current_token[0] == 'IDENT':
+                    dotident += self.current_token[1]
+                    self.advance()
                 self.expect('EQ')
                 params = self.parse_parameters()
                 base = ".".join(chain)
